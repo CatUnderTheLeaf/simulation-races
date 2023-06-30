@@ -1,0 +1,6 @@
+[submodule "race_ws/src/racecar"]
+	path = race_ws/src/racecar
+	url = https://github.com/CatUnderTheLeaf/racecar.git
+[submodule "race_ws/src/racecar_gazebo"]
+	path = race_ws/src/racecar_gazebo
+	url = https://github.com/CatUnderTheLeaf/racecar_gazebo.git
