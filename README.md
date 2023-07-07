@@ -23,11 +23,11 @@ catkin_make
 source devel/setup.bash
  
 # launch a racetrack wwith a car
-roslaunch racecar_gazebo racecar_walker.launch
+roslaunch races sim.launch
 
 # in another terminal
 # example how to make a car move
-rostopic pub -r 6 /vesc/ackermann_cmd_mux/input/teleop ackermann_msgs/AckermannDriveStamped '{header: auto, drive: {steering_angle: 0.0, speed: 0.5} }'
+rostopic pub -r 6 /vesc/ackermann_cmd_mux/input/teleop ackermann_msgs/AckermannDriveStamped '{header: auto, drive: {steering_angle: 0.3, speed: 1.0} }'
 ```
 
 
