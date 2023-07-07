@@ -7,7 +7,7 @@ Install [ROS1 Noetic](http://wiki.ros.org/noetic/Installation).
 
 Install additional ROS packages:
 ```
-sudo apt-get install ros-noetic-ros-control ros-noetic-gazebo-ros-control ros-noetic-ros-controllers ros-noetic-tf2-geometry-msgs ros-noetic-ackermann-msgs
+sudo apt-get install ros-noetic-ros-control ros-noetic-gazebo-ros-control ros-noetic-ros-controllers ros-noetic-tf2-geometry-msgs ros-noetic-ackermann-msgs ros-noetic-amcl
 ```
 Clone this repository with all submodules which were forked from mit-racecar[^1].
 ```
