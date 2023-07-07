@@ -155,7 +155,7 @@ public:
 /*!	\fn RbcarControllerClass::RbcarControllerClass()
  * 	\brief Public constructor
 */
-RbcarControllerClass(ros::NodeHandle h) : node_handle_(h), private_node_handle_("~"), 
+RbcarControllerClass(ros::NodeHandle h) : node_handle_(h), private_node_handle_("racecar"), 
   desired_freq_(50)
   {
 
@@ -227,7 +227,7 @@ RbcarControllerClass(ros::NodeHandle h) : node_handle_(h), private_node_handle_(
     
 
   // Publish odometry 
-  odom_pub_ = private_node_handle_.advertise<nav_msgs::Odometry>("odom", 1000);
+  odom_pub_ = node_handle_.advertise<nav_msgs::Odometry>("odom", 1000);
 
   // Flag to indicate joint_state has been read
   read_state_ = false;

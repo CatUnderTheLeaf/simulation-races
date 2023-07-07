@@ -5,6 +5,7 @@
   <description>The control_tf_odometry package</description>
 
   <url type="website">http://wiki.ros.org/rbcar_robot_control</url>
+  <url type="repository">https://github.com/chrissunny94/ackerman_ros_robot_gazebo_simulation/tree/master/rbcar_sim/rbcar_robot_control</url>
 
   <license>BSD</license>
 

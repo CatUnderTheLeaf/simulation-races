@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+ <node name="slam_gmapping" pkg="gmapping" type="slam_gmapping" output="screen" >
+      <!-- <param name="transform_publish_period" value="0"/>       -->
+    </node>
+ 
+</launch>

@@ -23,10 +23,16 @@
   <!-- control, tf and odometry launch file -->
   <include file="$(find control_tf_odometry)/launch/control_tf_odometry.launch" ns="/"/>
 
+  <!-- mapping with slam-gmapping -->
+  <!-- provides a map -->
+  <include file="$(find mapping_localization)/launch/slam.launch"/>
+transform_publish_period 
+  <!-- localization with amcl -->
+  <!-- uses a map from slam -->
+  <include file="$(find mapping_localization)/launch/amcl.launch"/>
 
   <!-- load rviz -->
-  <include file="$(find visual_aid)/launch/rviz.launch">
-  </include>
+  <include file="$(find visual_aid)/launch/rviz.launch"/>
 
 
 </launch>
