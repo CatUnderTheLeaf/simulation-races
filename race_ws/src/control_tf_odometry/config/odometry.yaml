@@ -1,0 +1,3 @@
+rbcar_d_wheels: 0.325
+rbcar_wheel_diameter: 0.1
+publish_odom_tf: true

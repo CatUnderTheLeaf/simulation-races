@@ -19,12 +19,12 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(control_tf_odometry_node src/rbcar_robot_control.cpp)
+add_executable(rbcar_robot_control src/rbcar_robot_control.cpp)
 
 
-add_dependencies(control_tf_odometry_node control_tf_odometry_generate_messages_cpp)
+# add_dependencies(rbcar_robot_control rbcar_robot_control_generate_messages_cpp)
 
 
-target_link_libraries(control_tf_odometry_node
+target_link_libraries(rbcar_robot_control
    ${catkin_LIBRARIES}
 )

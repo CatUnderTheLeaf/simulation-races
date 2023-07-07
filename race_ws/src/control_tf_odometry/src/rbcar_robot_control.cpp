@@ -65,14 +65,6 @@ public:
 
   // Robot model 
   std::string robot_model_;
-  
-  // Velocity and position references to low level controllers
-  ros::Publisher ref_vel_flw_;
-  ros::Publisher ref_vel_frw_;
-  ros::Publisher ref_vel_blw_;
-  ros::Publisher ref_vel_brw_;
-  ros::Publisher ref_pos_flw_;
-  ros::Publisher ref_pos_frw_;
 
   // Joint states published by the joint_state_controller of the Controller Manager
   ros::Subscriber joint_state_sub_;
@@ -170,41 +162,31 @@ public:
  * 	\brief Public constructor
 */
 RbcarControllerClass(ros::NodeHandle h) : node_handle_(h), private_node_handle_("~"), 
-  desired_freq_(100),
-  command_freq_("Command frequency check", boost::bind(&RbcarControllerClass::check_command_subscriber, this, _1))
+  desired_freq_(100)
   {
 
   ROS_INFO("rbcar_robot_control_node - Init ");
-  
-  ros::NodeHandle rbcar_robot_control_node_handle(node_handle_, "rbcar_robot_control");
-
-  // Get robot model from the parameters
-  if (!private_node_handle_.getParam("model", robot_model_)) {
-	  ROS_ERROR("Robot model not defined.");
-	  exit(-1);
-	  }
-  else ROS_INFO("Robot Model : %s", robot_model_.c_str());
 
   // Ackermann configuration - traction - topics
 
 
-  private_node_handle_.param<std::string>("frw_vel_topic", frw_vel_topic_, "rbcar/right_front_axle_controller/command");
-  private_node_handle_.param<std::string>("flw_vel_topic", flw_vel_topic_, "rbcar/left_front_axle_controller/command");
-  private_node_handle_.param<std::string>("blw_vel_topic", blw_vel_topic_, "rbcar/left_rear_axle_controller/command");
-  private_node_handle_.param<std::string>("brw_vel_topic", brw_vel_topic_, "rbcar/right_rear_axle_controller/command");
+  private_node_handle_.param<std::string>("frw_vel_topic", frw_vel_topic_, "/racecar/right_front_wheel_velocity_controller/command");
+  private_node_handle_.param<std::string>("flw_vel_topic", flw_vel_topic_, "/racecar/left_front_wheel_velocity_controller/command");
+  private_node_handle_.param<std::string>("blw_vel_topic", blw_vel_topic_, "/racecar/left_rear_wheel_velocity_controller/command");
+  private_node_handle_.param<std::string>("brw_vel_topic", brw_vel_topic_, "/racecar/right_rear_wheel_velocity_controller/command");
 
   // Ackermann configuration - traction - joint names 
-  private_node_handle_.param<std::string>("joint_front_right_wheel", joint_front_right_wheel, "right_front_axle");
-  private_node_handle_.param<std::string>("joint_front_left_wheel", joint_front_left_wheel, "left_front_axle");
-  private_node_handle_.param<std::string>("joint_back_left_wheel", joint_back_left_wheel, "left_rear_axle");
-  private_node_handle_.param<std::string>("joint_back_right_wheel", joint_back_right_wheel, "right_rear_axle");
+  private_node_handle_.param<std::string>("joint_front_right_wheel", joint_front_right_wheel, "right_front_wheel_joint");
+  private_node_handle_.param<std::string>("joint_front_left_wheel", joint_front_left_wheel, "left_front_wheel_joint");
+  private_node_handle_.param<std::string>("joint_back_left_wheel", joint_back_left_wheel, "left_rear_wheel_joint");
+  private_node_handle_.param<std::string>("joint_back_right_wheel", joint_back_right_wheel, "right_rear_wheel_joint");
 
   // Ackermann configuration - direction - topics
-  private_node_handle_.param<std::string>("frw_pos_topic", frw_pos_topic_, "rbcar/right_steering_joint_controller/command");
-  private_node_handle_.param<std::string>("flw_pos_topic", flw_pos_topic_, "rbcar/left_steering_joint_controller/command");
+  private_node_handle_.param<std::string>("frw_pos_topic", frw_pos_topic_, "/racecar/right_steering_hinge_position_controller/command");
+  private_node_handle_.param<std::string>("flw_pos_topic", flw_pos_topic_, "/racecar/left_steering_hinge_position_controller/command");
 
-  private_node_handle_.param<std::string>("joint_front_right_steer", joint_front_right_steer, "right_steering_joint"); 
-  private_node_handle_.param<std::string>("joint_front_left_steer", joint_front_left_steer, "left_steering_joint");
+  private_node_handle_.param<std::string>("joint_front_right_steer", joint_front_right_steer, "right_steering_hinge_joint"); 
+  private_node_handle_.param<std::string>("joint_front_left_steer", joint_front_left_steer, "left_steering_hinge_joint");
 
   // Robot parameters
   if (!private_node_handle_.getParam("rbcar_d_wheels", rbcar_d_wheels_))
@@ -215,8 +197,8 @@ RbcarControllerClass(ros::NodeHandle h) : node_handle_(h), private_node_handle_(
   ROS_INFO("rbcar_wheel_diameter_ = %5.2f", rbcar_wheel_diameter_);
 
   private_node_handle_.param("publish_odom_tf", publish_odom_tf_, true);
-  if (publish_odom_tf_) ROS_INFO("PUBLISHING odom->base_footprint tf");
-  else ROS_INFO("NOT PUBLISHING odom->base_footprint tf");
+  if (publish_odom_tf_) ROS_INFO("PUBLISHING odom->base_link tf");
+  else ROS_INFO("NOT PUBLISHING odom->base_link tf");
   
   // Robot Speeds
   linearSpeedXMps_   = 0.0;
@@ -240,26 +222,16 @@ RbcarControllerClass(ros::NodeHandle h) : node_handle_(h), private_node_handle_(
   lin_acc_x_ = 0.0; lin_acc_y_ = 0.0; lin_acc_z_ = 0.0;
   orientation_x_ = 0.0; orientation_y_ = 0.0; orientation_z_ = 0.0; orientation_w_ = 1.0;
 
-  // Advertise controller services
-  srv_SetOdometry_ = rbcar_robot_control_node_handle.advertiseService("set_odometry",  &RbcarControllerClass::srvCallback_SetOdometry, this);
-
   // Subscribe to joint states topic
-  joint_state_sub_ = node_handle_.subscribe<sensor_msgs::JointState>("joint_states", 1, &RbcarControllerClass::jointStateCallback, this);
+  joint_state_sub_ = node_handle_.subscribe<sensor_msgs::JointState>("/racecar/joint_states", 1, &RbcarControllerClass::jointStateCallback, this);
 
   // Subscribe to imu data
   imu_sub_ = node_handle_.subscribe("imu/data", 1, &RbcarControllerClass::imuCallback, this);
-
-  // Adevertise reference topics for the controllers 
-  ref_vel_frw_ = node_handle_.advertise<std_msgs::Float64>( frw_vel_topic_, 50);
-  ref_vel_flw_ = node_handle_.advertise<std_msgs::Float64>( flw_vel_topic_, 50);
-  ref_vel_blw_ = node_handle_.advertise<std_msgs::Float64>( blw_vel_topic_, 50);
-  ref_vel_brw_ = node_handle_.advertise<std_msgs::Float64>( brw_vel_topic_, 50);  
-  ref_pos_frw_ = node_handle_.advertise<std_msgs::Float64>( frw_pos_topic_, 50);
-  ref_pos_flw_ = node_handle_.advertise<std_msgs::Float64>( flw_pos_topic_, 50);
   	  
   // Subscribe to command topic
-  cmd_sub_ = rbcar_robot_control_node_handle.subscribe<ackermann_msgs::AckermannDriveStamped>("command", 1, &RbcarControllerClass::commandCallback, this);
+  cmd_sub_ = node_handle_.subscribe<ackermann_msgs::AckermannDriveStamped>("/vesc/ackermann_cmd_mux/input/navigation", 1, &RbcarControllerClass::commandCallback, this);
     
+
   // Publish odometry 
   odom_pub_ = private_node_handle_.advertise<nav_msgs::Odometry>("odom", 1000);
 
@@ -284,61 +256,6 @@ int starting()
 		ROS_WARN("RbcarControllerClass::starting: joint_states are not being received");
 		return -1;
 	}
-}
-
-/// Controller update loop 
-void UpdateControl()
-{
-  // Compute state control actions
-  // State feedback error 4 position loops / 4 velocity loops 
-  // Single steering 
-  double d1 =0.0;
-  double d = RBCAR_D_WHEELS_M; // divide by 2 for dual Ackermann steering
-  double alfa_ref_left = 0.0;
-  double alfa_ref_right = 0.0;
-  if (alfa_ref_!=0.0) {  // div/0
-     d1 =  d / tan (alfa_ref_);
-     alfa_ref_left = atan2( d, d1 - 0.105);
-     alfa_ref_right = atan2( d, d1 + 0.105);
-     if (alfa_ref_<0.0) {
-		alfa_ref_left = alfa_ref_left - PI;
-		alfa_ref_right = alfa_ref_right - PI;
-		}     
-     }
-  else {
-     alfa_ref_left = 0.0;
-     alfa_ref_right = 0.0;
-     }
-     
-   // Angular position ref publish
-   std_msgs::Float64 frw_ref_pos_msg;
-   std_msgs::Float64 flw_ref_pos_msg;
-   std_msgs::Float64 brw_ref_pos_msg;
-   std_msgs::Float64 blw_ref_pos_msg;
-
-   flw_ref_pos_msg.data = alfa_ref_left;
-   frw_ref_pos_msg.data = alfa_ref_right;
-     
-   // Linear speed ref publish (could be improved by setting correct speed to each wheel according to turning state
-   // w = v_mps / (PI * D);   w_rad = w * 2.0 * PI
-   double ref_speed_joint = 2.0 * v_ref_ / RBCAR_WHEEL_DIAMETER;
-   
-   std_msgs::Float64 frw_ref_vel_msg;
-   std_msgs::Float64 flw_ref_vel_msg;
-   std_msgs::Float64 brw_ref_vel_msg;
-   std_msgs::Float64 blw_ref_vel_msg;
-   frw_ref_vel_msg.data = -ref_speed_joint;
-   flw_ref_vel_msg.data = -ref_speed_joint;
-   brw_ref_vel_msg.data = -ref_speed_joint;
-   blw_ref_vel_msg.data = -ref_speed_joint;
-   
-   // Publish msgs traction and direction
-   ref_vel_frw_.publish( frw_ref_vel_msg );
-   ref_vel_flw_.publish( flw_ref_vel_msg );
-   ref_vel_blw_.publish( blw_ref_vel_msg );
-   ref_vel_brw_.publish( brw_ref_vel_msg );
-   ref_pos_frw_.publish( frw_ref_pos_msg );
-   ref_pos_flw_.publish( flw_ref_pos_msg );
 }
 
 // Update robot odometry depending on kinematic configuration
@@ -414,7 +331,7 @@ void PublishOdometry()
     geometry_msgs::TransformStamped odom_trans;
     odom_trans.header.stamp = current_time;
     odom_trans.header.frame_id = "odom";
-    odom_trans.child_frame_id = "base_footprint";
+    odom_trans.child_frame_id = "base_link";
 
     odom_trans.transform.translation.x = robot_pose_px_;
     odom_trans.transform.translation.y = robot_pose_py_;
@@ -449,7 +366,7 @@ void PublishOdometry()
       		odom.pose.covariance[i*6+i] = 0.1;  // test 0.001
 
     //set the velocity
-    odom.child_frame_id = "base_footprint";
+    odom.child_frame_id = "base_link";
 	// Linear velocities
     odom.twist.twist.linear.x = robot_pose_vx_;
     odom.twist.twist.linear.y = robot_pose_vy_;
@@ -482,18 +399,6 @@ void setCommand(const ackermann_msgs::AckermannDriveStamped &msg)
     alfa_ref_ = saturation(msg.drive.steering_angle, -angle_limit, angle_limit);
 }
 
-// Service SetOdometry 
-bool srvCallback_SetOdometry(robotnik_msgs::set_odometry::Request &request, robotnik_msgs::set_odometry::Response &response )
-{
-	// ROS_INFO("rbcar_odometry::set_odometry: request -> x = %f, y = %f, a = %f", req.x, req.y, req.orientation);
-	robot_pose_px_ = request.x;
-	robot_pose_py_ = request.y;
-	robot_pose_pa_ = request.orientation;
-
-	response.ret = true;
-	return true;
-}
-
 // Topic command
 void jointStateCallback(const sensor_msgs::JointStateConstPtr& msg)
 {	
@@ -506,8 +411,6 @@ void jointStateCallback(const sensor_msgs::JointStateConstPtr& msg)
 // void commandCallback(const ackermann_msgs::AckermannDriveStamped& msg)
 void commandCallback(const ackermann_msgs::AckermannDriveStamped::ConstPtr& msg)
 {
-  // Safety check
-  last_command_time_ = ros::Time::now();
 
   base_vel_msg_ = *msg;
   this->setCommand(base_vel_msg_);
@@ -561,7 +464,6 @@ bool spin()
       if (starting() == 0)
       {
 	    while(ros::ok() && node_handle_.ok()) {
-          UpdateControl();
           UpdateOdometry();
           PublishOdometry();
           ros::spinOnce();
