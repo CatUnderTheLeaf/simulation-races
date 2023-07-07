@@ -63,19 +63,11 @@ public:
   ros::NodeHandle private_node_handle_;
   double desired_freq_;
 
-  // Robot model 
-  std::string robot_model_;
-
   // Joint states published by the joint_state_controller of the Controller Manager
   ros::Subscriber joint_state_sub_;
 
   // High level robot command
   ros::Subscriber cmd_sub_;
-	
-  //ros::Subscriber gyro_sub_;
-
-  // Services
-  ros::ServiceServer srv_SetOdometry_;
   
   // Ackermann Topics - control action - traction - velocity
   std::string frw_vel_topic_;
@@ -127,6 +119,8 @@ public:
   
   // Flag to indicate if joint_state has been read
   bool read_state_; 
+  // timestamp that tracks the last time a Tf was broadcasted
+  ros::Time last_published_timestamp;
   
   // Robot configuration parameters 
   double rbcar_wheel_diameter_; 
@@ -162,7 +156,7 @@ public:
  * 	\brief Public constructor
 */
 RbcarControllerClass(ros::NodeHandle h) : node_handle_(h), private_node_handle_("~"), 
-  desired_freq_(100)
+  desired_freq_(50)
   {
 
   ROS_INFO("rbcar_robot_control_node - Init ");
@@ -237,6 +231,9 @@ RbcarControllerClass(ros::NodeHandle h) : node_handle_(h), private_node_handle_(
 
   // Flag to indicate joint_state has been read
   read_state_ = false;
+
+  // Initialize last_published_timestamp that tracks the last time a Tf was broadcasted
+  last_published_timestamp = ros::Time::now();
 }
 
 /// Controller startup in realtime
@@ -324,8 +321,8 @@ void UpdateOdometry()
 // Publish robot odometry tf and topic depending 
 void PublishOdometry()
 {
-	ros::Time current_time = ros::Time::now();
-	
+    ros::Time current_time = ros::Time::now();
+
     //first, we'll publish the transform over tf
     // TODO change to tf_prefix 
     geometry_msgs::TransformStamped odom_trans;
@@ -337,14 +334,15 @@ void PublishOdometry()
     odom_trans.transform.translation.y = robot_pose_py_;
     odom_trans.transform.translation.z = 0.0;
     odom_trans.transform.rotation.x = orientation_x_;
-	odom_trans.transform.rotation.y = orientation_y_;
-	odom_trans.transform.rotation.z = orientation_z_;
-	odom_trans.transform.rotation.w = orientation_w_;
+    odom_trans.transform.rotation.y = orientation_y_;
+    odom_trans.transform.rotation.z = orientation_z_;
+    odom_trans.transform.rotation.w = orientation_w_;
 	
     // send the transform over /tf
 	// activate / deactivate with param
 	// this tf in needed when not using robot_pose_ekf
-    if (publish_odom_tf_) odom_broadcaster.sendTransform(odom_trans);  
+  // Only publish if the current stamp is different than the last one
+    if (publish_odom_tf_ && (last_published_timestamp < current_time)) odom_broadcaster.sendTransform(odom_trans);  
         
     //next, we'll publish the odometry message over ROS
     nav_msgs::Odometry odom;
@@ -358,10 +356,10 @@ void PublishOdometry()
     odom.pose.pose.position.z = 0.0;
 	// Orientation
     odom.pose.pose.orientation.x = orientation_x_;
-	odom.pose.pose.orientation.y = orientation_y_;
-	odom.pose.pose.orientation.z = orientation_z_;
-	odom.pose.pose.orientation.w = orientation_w_;
-	// Pose covariance
+    odom.pose.pose.orientation.y = orientation_y_;
+    odom.pose.pose.orientation.z = orientation_z_;
+    odom.pose.pose.orientation.w = orientation_w_;
+    // Pose covariance
     for(int i = 0; i < 6; i++)
       		odom.pose.covariance[i*6+i] = 0.1;  // test 0.001
 
@@ -370,17 +368,22 @@ void PublishOdometry()
 	// Linear velocities
     odom.twist.twist.linear.x = robot_pose_vx_;
     odom.twist.twist.linear.y = robot_pose_vy_;
-	odom.twist.twist.linear.z = 0.0;
-	// Angular velocities
-	odom.twist.twist.angular.x = ang_vel_x_;
-	odom.twist.twist.angular.y = ang_vel_y_;
-    odom.twist.twist.angular.z = ang_vel_z_;
-	// Twist covariance
-	for(int i = 0; i < 6; i++)
+    odom.twist.twist.linear.z = 0.0;
+    // Angular velocities
+    odom.twist.twist.angular.x = ang_vel_x_;
+    odom.twist.twist.angular.y = ang_vel_y_;
+      odom.twist.twist.angular.z = ang_vel_z_;
+    // Twist covariance
+    for(int i = 0; i < 6; i++)
      		odom.twist.covariance[6*i+i] = 0.1;  // test 0.001
 
     //publish the message
-    odom_pub_.publish(odom);
+    // Only publish if the current stamp is different than the last one
+    if (last_published_timestamp < current_time)
+        odom_pub_.publish(odom);
+    
+    // Update the tracked stamp
+    last_published_timestamp = current_time;
 }
 
 /// Controller stopping
