@@ -26,6 +26,6 @@
   <rosparam file="$(find control_tf_odometry)/config/odometry.yaml" command="load"/>
 
   <!-- piblish joint commands, tf and odometry -->
-  <node pkg="control_tf_odometry" name="control_tf_odometry" type="rbcar_robot_control"/>
+  <node pkg="control_tf_odometry" name="control_tf_odometry" type="rbcar_robot_control" output="screen"/>
 
 </launch>

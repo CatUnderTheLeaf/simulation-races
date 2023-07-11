@@ -285,8 +285,16 @@ void UpdateOdometry()
 	
 	// Linear speed
     double fSamplePeriod = 1.0 / desired_freq_;  // Default sample period    
-    double v_mps = -(v3 + v4) / 2.0;
-
+    double v_mps = (v3 + v4) / 2.0; // originally with 'minus' sign
+  // ROS_INFO("v3=%5.2f v4=%5.2f fSamplePeriod=%5.2f v_mps=%5.2f", v3, v4, fSamplePeriod, v_mps);
+  // ROS_INFO("%d", frw_pos_);
+  // ROS_INFO("%d", flw_pos_);
+  // ROS_INFO("%d", blw_vel_);
+  // ROS_INFO("%d", brw_vel_);
+  // ROS_INFO("%5.2f", joint_state_.position[frw_pos_]);
+  // ROS_INFO("%5.2f", joint_state_.position[flw_pos_]);
+  // ROS_INFO("%5.2f", joint_state_.velocity[blw_vel_]);
+  // ROS_INFO("%5.2f", joint_state_.velocity[brw_vel_]);
     // Compute orientation just integrating imu gyro (not so reliable with the simulated imu)
     // robot_pose_pa_ += ang_vel_z_ * fSamplePeriod;
 
@@ -398,8 +406,8 @@ void setCommand(const ackermann_msgs::AckermannDriveStamped &msg)
     // Mapping - linear = v_ref_, angular = alfa_ref_ 
 	double speed_limit = 10.0;  // m/s
 	double angle_limit = PI/4.0;   // there should be also urdf limits
-    v_ref_ = saturation(msg.drive.speed, -speed_limit, speed_limit);  
-    alfa_ref_ = saturation(msg.drive.steering_angle, -angle_limit, angle_limit);
+  v_ref_ = saturation(msg.drive.speed, -speed_limit, speed_limit);  
+  alfa_ref_ = saturation(msg.drive.steering_angle, -angle_limit, angle_limit);
 }
 
 // Topic command
@@ -417,6 +425,7 @@ void commandCallback(const ackermann_msgs::AckermannDriveStamped::ConstPtr& msg)
 
   base_vel_msg_ = *msg;
   this->setCommand(base_vel_msg_);
+  // ROS_INFO("velocity is %5.2f", v_ref_);
 }
 
 // Imu callback
