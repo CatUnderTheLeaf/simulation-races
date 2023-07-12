@@ -40,11 +40,22 @@
           args="0 0 0 0 0 0 map /odom"
     />
 
-
+  <!-- this model has two lasers, this node merges two scan topics into one -->
+  <node pkg="ira_laser_tools" name="laserscan_multi_merger" type="laserscan_multi_merger" output="screen">
+	<param name="destination_frame" value="base_link"/>
+	<param name="cloud_destination_topic" value="/merged_cloud"/>
+	<param name="scan_destination_topic" value="/scan"/>
+	<param name="laserscan_topics" value ="/front_lidar/scan /rear_lidar/scan" />
+	<param name="angle_min" value="-3.14"/>
+	<param name="angle_max" value="3.14"/>
+	<param name="angle_increment" value="0.0058"/>
+	<param name="scan_time" value="0.0333333"/>
+	<param name="range_min" value="0.30"/>
+	<param name="range_max" value="50.0"/>
+  </node>
 
   <!-- mapping with slam-gmapping -->
   <!-- provides a map and map → odom transform -->
-  <node pkg="topic_tools" type="mux" name="mux_scans" args="scan front_lidar/scan rear_lidar/scan mux:=mux_scans"/>
   <include file="$(find mapping_localization)/launch/slam.launch"/>
  
   <!-- localization with amcl -->
