@@ -4,3 +4,6 @@
 [submodule "race_ws/src/racecar_gazebo"]
 	path = race_ws/src/racecar_gazebo
 	url = https://github.com/CatUnderTheLeaf/racecar_gazebo.git
+[submodule "race_ws/src/robocar110_ros"]
+	path = race_ws/src/robocar110_ros
+	url = https://github.com/CatUnderTheLeaf/robocar110_ros.git
