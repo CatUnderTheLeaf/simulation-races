@@ -51,3 +51,6 @@ qtcreator-*
 CATKIN_IGNORE
 race_ws/.catkin_workspace
 .vscode/settings.json
+robocar110_ws/src/CMakeLists.txt
+robocar110_ws/.catkin_workspace
+race_ws/src/CMakeLists.txt
