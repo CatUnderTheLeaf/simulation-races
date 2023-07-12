@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="world_name" value="racecar_walker"/>
+  <!-- <arg name="world_name" value="racecar_tunnel"/> -->
+  <arg name="gui" default="true" />
+  <arg name="run_camera" default="false"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find racecar_gazebo)/worlds/$(arg world_name).world"/>
+    <arg name="gui" value="$(arg gui)"/>
+  </include>
+
+  <!-- urdf xml robot description loaded on the Parameter Server, converting the xacro into a proper urdf file-->
+  <param name="robot_description" command="$(find xacro)/xacro '$(find rc110)/urdf/robot.xacro'" /> 
+
+  <!-- push robot_description to factory and spawn robot in gazebo -->
+  <!-- <node name="racecar_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model racecar -z 0.05" /> -->
+<!-- -x -57.0 for tunnel -->
+
+  <node pkg="gazebo_ros" type="spawn_model" name="robot_spawner"
+        args="-file $(find rc110)/models/rc110/model.sdf -sdf -model racecar -z 0.05"/>
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen"/>
+    
+
+  <!-- Switching between joystick and AD.
+      By default drive_manual topic is mapped to drive.
+      To switch run: rosservice call mux_drive/select drive_ad
+      Or use joystick or rviz.
+    -->
+    <node pkg="topic_tools" type="mux" name="mux_drive" args="drive drive_manual drive_ad mux:=mux_drive"/>
+
+   <!-- simulation of rc110_drive_control (more or less) -->
+    <node pkg="rc110_gazebo" type="rc110_gazebo" name="drive_control" required="true">
+        <param name="base_frame_id" value="base_link"/>
+    </node>
+
+  <!-- static transforms from map to odom, since there's no localization by default -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="tf_map_to_odom"
+          args="0 0 0 0 0 0 map /odom"
+    />
+
+
+
+  <!-- mapping with slam-gmapping -->
+  <!-- provides a map and map → odom transform -->
+  <node pkg="topic_tools" type="mux" name="mux_scans" args="scan front_lidar/scan rear_lidar/scan mux:=mux_scans"/>
+  <include file="$(find mapping_localization)/launch/slam.launch"/>
+ 
+  <!-- localization with amcl -->
+  <!-- uses a map from slam  also makes a map → odom transform, no need for two transforms-->
+  <include file="$(find mapping_localization)/launch/amcl.launch"/>
+
+  <!-- load rviz -->
+  <include file="$(find visual_aid)/launch/rviz.launch"/>
+
+
+</launch>

@@ -4,6 +4,7 @@
 
  <node name="slam_gmapping" pkg="gmapping" type="slam_gmapping" output="screen" >
       <!-- <param name="transform_publish_period" value="0"/>        -->
+      <!-- <remap from="/scan" to="/racecar/joint_states" /> -->
       <param name="map_update_interval" value="3.0"/>
     </node>
  
